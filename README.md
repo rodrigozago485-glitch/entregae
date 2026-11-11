@@ -1,26 +1,66 @@
+Entregaê
+
+Plataforma de delivery desenvolvida para conectar clientes, restaurantes e entregadores em uma única experiência.
+
 Sobre o projeto
 
-O Entregaê é uma plataforma de delivery que estou desenvolvendo com a ideia de tornar o processo de pedir comida mais simples, rápido e prático.
+Estou desenvolvendo o Entregaê com o objetivo de criar uma plataforma de delivery moderna, intuitiva e funcional. A proposta é facilitar o processo de pedidos, o gerenciamento de restaurantes e o acompanhamento das entregas.
 
-O objetivo é criar um ambiente onde os clientes possam encontrar restaurantes, visualizar produtos, realizar pedidos, escolher formas de pagamento e acompanhar suas entregas.
-
-Quero desenvolver uma plataforma completa, com um visual moderno, navegação intuitiva e funcionalidades que realmente facilitem o dia a dia dos usuários.
+O projeto possui uma interface própria, identidade visual e funcionalidades específicas para cada tipo de usuário.
 
 Funcionalidades
 
-Catálogo de restaurantes e produtos.
+Cliente
 
-Carrinho de compras para adicionar e remover produtos.
+Cadastro e login de usuários.
 
-Opção de compra direta.
+Visualização e pesquisa de restaurantes.
 
-Busca de endereço por CEP, com preenchimento automático.
+Filtros por categorias.
 
-Campo para informar número da residência e complemento.
+Visualização de cardápios e produtos.
 
-Mapa interativo para acompanhamento das entregas.
+Adição e remoção de produtos do carrinho.
 
-Interface adaptada para computadores e dispositivos móveis.
+Finalização de pedidos.
+
+Acompanhamento do andamento da entrega.
+
+Visualização de mapas e rotas.
+
+Restaurante
+
+Cadastro do estabelecimento.
+
+Informações do responsável e do restaurante.
+
+Cadastro com CNPJ ou opção para quem não possui CNPJ.
+
+Cadastro de endereço com preenchimento automático pelo CEP.
+
+Painel de gerenciamento de pedidos.
+
+Visualização dos detalhes dos pedidos.
+
+Aceitação ou rejeição de pedidos.
+
+Atualização do status de preparação.
+
+Entregador
+
+Cadastro de entregadores.
+
+Cadastro de CPF, telefone e informações do veículo.
+
+Opção de cadastro com bicicleta, moto ou carro.
+
+Painel de entregas disponíveis.
+
+Aceitação de corridas.
+
+Visualização dos endereços de retirada e entrega.
+
+Acompanhamento do percurso pelo mapa.
 
 Tecnologias utilizadas
 
@@ -30,42 +70,38 @@ TypeScript
 
 Node.js
 
-Vite
+JavaScript
 
 CSS
 
+API
+
 React Leaflet
+
+Integração com mapas
+
+Visual Studio Code
+
+Git e GitHub
 
 Estrutura do projeto
 
-O projeto está organizado em duas partes principais:
+O projeto está organizado em uma estrutura que separa a aplicação web e a API:
 
-Web: responsável pela interface e pela interação com os usuários.
-
-API: responsável pelo servidor e pela comunicação com o sistema.
+delivery-platform/
+├── apps/
+│   ├── web/
+│   │   └── src/
+│   │       ├── App.tsx
+│   │       ├── App.css
+│   │       ├── DeliveryMap.tsx
+│   │       └── ...
+│   └── api/
+│       └── ...
+└── ...
 
 Objetivo
 
-Meu objetivo é transformar o Entregaê em uma plataforma de delivery completa, oferecendo uma experiência agradável para os clientes e boas ferramentas para os estabelecimentos.
+Meu objetivo é transformar o Entregaê em uma plataforma de delivery completa, com uma experiência simples para os clientes e ferramentas de gerenciamento para restaurantes e entregadores.
 
-Durante o desenvolvimento, estou buscando aprimorar meus conhecimentos em programação, aprender novas tecnologias e colocar em prática tudo o que venho estudando.
-
-Próximas etapas
-
-Implementar o sistema de cadastro e login.
-
-Aprimorar o gerenciamento de pedidos.
-
-Integrar serviços de pagamento.
-
-Implementar o acompanhamento de entregas em tempo real.
-
-Desenvolver uma área administrativa para restaurantes.
-
-Continuar melhorando o desempenho e a interface da plataforma.
-
-Desenvolvedor
-
-Rodrigo Zago Montoro
-
-O Entregaê é um projeto pessoal que estou desenvolvendo com dedicação, buscando evoluir minhas habilidades e criar uma plataforma que possa futuramente se tornar um serviço real.
+O projeto está em desenvolvimento e recebe melhorias continuamente.
