@@ -32,6 +32,65 @@ type ItemCarrinho = {
 }
 
 type FormaPagamento = 'PIX' | 'Cartão' | 'Dinheiro'
+type TipoConta = 'Cliente' | 'Restaurante' | 'Entregador'
+type ModoAutenticacao = 'login' | 'cadastro'
+
+type UsuarioDemo = {
+  nome: string
+  email: string
+  telefone: string
+  senha: string
+  tipo: TipoConta
+
+  cpf?: string
+
+  nomeResponsavel?: string
+  cnpj?: string
+  semCnpj?: boolean
+  categoriaComida?: string
+
+  cep?: string
+  rua?: string
+  numero?: string
+  complemento?: string
+  bairro?: string
+  cidade?: string
+  estado?: string
+
+  tipoVeiculo?: string
+  marcaVeiculo?: string
+  modeloVeiculo?: string
+  anoVeiculo?: string
+  corVeiculo?: string
+  placa?: string
+  renavam?: string
+  numeroCnh?: string
+  categoriaCnh?: string
+  validadeCnh?: string
+}
+
+type StatusPedido = 'Recebido' | 'Aceito' | 'Preparando' | 'Pronto para retirada' | 'Em rota' | 'Entregue' | 'Recusado'
+
+type PedidoDemo = {
+  id: number
+  restauranteId: number
+  restauranteNome: string
+  clienteNome: string
+  itens: ItemCarrinho[]
+  total: number
+  cep: string
+  rua: string
+  numero: string
+  complemento: string
+  bairro: string
+  cidade: string
+  estado: string
+  formaPagamento: FormaPagamento
+  status: StatusPedido
+  criadoEm: string
+  entregadorNome?: string
+  entregadorEmail?: string
+}
 
 type DadosCEP = {
   logradouro?: string
@@ -178,6 +237,61 @@ function App() {
   const [pedidoStatus, setPedidoStatus] = useState<number | null>(null)
   const [apiOnline, setApiOnline] = useState(false)
   const [mensagemCarrinho, setMensagemCarrinho] = useState('')
+  const [pedidosDemo, setPedidosDemo] = useState<PedidoDemo[]>([])
+  const [corridaSelecionada, setCorridaSelecionada] = useState<number | null>(null)
+
+  // Autenticação demonstrativa
+  const [loginAberto, setLoginAberto] = useState(false)
+  const [modoAutenticacao, setModoAutenticacao] = useState<ModoAutenticacao>('login')
+  const [tipoConta, setTipoConta] = useState<TipoConta>('Cliente')
+
+  // Dados comuns
+  const [nomeCadastro, setNomeCadastro] = useState('')
+  const [telefoneCadastro, setTelefoneCadastro] = useState('')
+  const [emailLogin, setEmailLogin] = useState('')
+  const [senhaLogin, setSenhaLogin] = useState('')
+  const [confirmarSenha, setConfirmarSenha] = useState('')
+
+  // Dados do restaurante
+  const [nomeRestaurante, setNomeRestaurante] = useState('')
+  const [responsavelRestaurante, setResponsavelRestaurante] = useState('')
+  const [cnpjRestaurante, setCnpjRestaurante] = useState('')
+  const [semCnpj, setSemCnpj] = useState(false)
+  const [categoriaComida, setCategoriaComida] = useState('')
+  const [cepRestaurante, setCepRestaurante] = useState('')
+  const [ruaRestaurante, setRuaRestaurante] = useState('')
+  const [numeroRestaurante, setNumeroRestaurante] = useState('')
+  const [complementoRestaurante, setComplementoRestaurante] = useState('')
+  const [bairroRestaurante, setBairroRestaurante] = useState('')
+  const [cidadeRestaurante, setCidadeRestaurante] = useState('')
+  const [estadoRestaurante, setEstadoRestaurante] = useState('')
+  const [cepRestauranteCarregando, setCepRestauranteCarregando] = useState(false)
+  const [cepRestauranteErro, setCepRestauranteErro] = useState('')
+
+  // Dados do entregador
+  const [cpfCadastro, setCpfCadastro] = useState('')
+  const [tipoVeiculo, setTipoVeiculo] = useState('Moto')
+  const [marcaVeiculo, setMarcaVeiculo] = useState('')
+  const [modeloVeiculo, setModeloVeiculo] = useState('')
+  const [anoVeiculo, setAnoVeiculo] = useState('')
+  const [corVeiculo, setCorVeiculo] = useState('')
+  const [placaVeiculo, setPlacaVeiculo] = useState('')
+  const [renavamVeiculo, setRenavamVeiculo] = useState('')
+  const [numeroCnh, setNumeroCnh] = useState('')
+  const [categoriaCnh, setCategoriaCnh] = useState('')
+  const [validadeCnh, setValidadeCnh] = useState('')
+
+  const [mostrarSenha, setMostrarSenha] = useState(false)
+  const [mostrarConfirmacao, setMostrarConfirmacao] = useState(false)
+  const [mensagemLogin, setMensagemLogin] = useState('')
+  const [continuarParaCheckout, setContinuarParaCheckout] = useState(false)
+
+  const [usuariosDemo, setUsuariosDemo] = useState<UsuarioDemo[]>([])
+  const [usuarioLogado, setUsuarioLogado] = useState<{
+    nome: string
+    email: string
+    tipo: TipoConta
+  } | null>(null)
 
   const [nomeCliente, setNomeCliente] = useState('')
   const [cep, setCep] = useState('')
@@ -200,22 +314,26 @@ function App() {
         setApiOnline(false)
       }
     }
+
     void verificarAPI()
   }, [])
 
   useEffect(() => {
     if (!mensagemCarrinho) return
+
     const temporizador = window.setTimeout(() => setMensagemCarrinho(''), 2500)
     return () => window.clearTimeout(temporizador)
   }, [mensagemCarrinho])
 
   useEffect(() => {
     if (pedidoStatus === null || pedidoStatus >= etapasEntrega.length - 1) return
+
     const temporizador = window.setTimeout(() => {
       setPedidoStatus((atual) =>
         atual === null ? null : Math.min(atual + 1, etapasEntrega.length - 1),
       )
     }, 8000)
+
     return () => window.clearTimeout(temporizador)
   }, [pedidoStatus])
 
@@ -224,13 +342,16 @@ function App() {
       restaurantes.filter((restaurante) => {
         const correspondeCategoria =
           categoriaAtiva === 'Todos' || restaurante.categoria === categoriaAtiva
+
         const correspondeBusca = restaurante.nome.toLowerCase().includes(busca.toLowerCase())
+
         return correspondeCategoria && correspondeBusca
       }),
     [busca, categoriaAtiva],
   )
 
-  const restauranteAtual = restaurantes.find((item) => item.id === restauranteSelecionado) ?? null
+  const restauranteAtual =
+    restaurantes.find((item) => item.id === restauranteSelecionado) ?? null
 
   const produtosFiltrados = restauranteAtual
     ? restauranteAtual.cardapio.filter(
@@ -238,7 +359,10 @@ function App() {
       )
     : []
 
-  const quantidadeCarrinho = carrinho.reduce((total, item) => total + item.quantidade, 0)
+  const quantidadeCarrinho = carrinho.reduce(
+    (total, item) => total + item.quantidade,
+    0,
+  )
 
   const totalCarrinho = carrinho.reduce(
     (total, item) => total + item.produto.preco * item.quantidade,
@@ -295,6 +419,63 @@ function App() {
     }
   }
 
+  async function consultarCEPRestaurante(valor: string) {
+    const cepLimpo = valor.replace(/\D/g, '')
+    if (cepLimpo.length !== 8) return
+
+    setCepRestauranteCarregando(true)
+    setCepRestauranteErro('')
+
+    try {
+      const resposta = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`)
+
+      if (!resposta.ok) {
+        throw new Error('Não foi possível consultar o CEP.')
+      }
+
+      const dados: DadosCEP = await resposta.json()
+
+      if (dados.erro) {
+        setCepRestauranteErro('CEP não encontrado. Confira os números digitados.')
+        setRuaRestaurante('')
+        setBairroRestaurante('')
+        setCidadeRestaurante('')
+        setEstadoRestaurante('')
+        return
+      }
+
+      setRuaRestaurante(dados.logradouro || '')
+      setBairroRestaurante(dados.bairro || '')
+      setCidadeRestaurante(dados.localidade || '')
+      setEstadoRestaurante(dados.uf || '')
+    } catch {
+      setCepRestauranteErro('Não foi possível consultar o CEP. Tente novamente.')
+    } finally {
+      setCepRestauranteCarregando(false)
+    }
+  }
+
+  function alterarCEPRestaurante(valor: string) {
+    const numeros = valor.replace(/\D/g, '').slice(0, 8)
+
+    setCepRestaurante(
+      numeros.length > 5
+        ? `${numeros.slice(0, 5)}-${numeros.slice(5)}`
+        : numeros,
+    )
+
+    setCepRestauranteErro('')
+
+    if (numeros.length === 8) {
+      void consultarCEPRestaurante(numeros)
+    } else {
+      setRuaRestaurante('')
+      setBairroRestaurante('')
+      setCidadeRestaurante('')
+      setEstadoRestaurante('')
+    }
+  }
+
   function adicionarAoCarrinho(restauranteId: number, produto: Produto) {
     setCarrinho((atual) => {
       const existente = atual.find(
@@ -332,8 +513,66 @@ function App() {
     setCheckoutAberto(false)
   }
 
+  function abrirCheckout() {
+    if (!usuarioLogado) {
+      setContinuarParaCheckout(true)
+      setMensagemLogin('Entre ou crie sua conta de cliente para continuar com o pedido.')
+      setModoAutenticacao('login')
+      setLoginAberto(true)
+      return
+    }
+
+    if (usuarioLogado.tipo !== 'Cliente') {
+      setMensagemLogin('Somente contas de Cliente podem realizar pedidos.')
+      setModoAutenticacao('login')
+      setLoginAberto(true)
+      return
+    }
+
+    setNomeCliente(usuarioLogado.nome)
+    setCheckoutAberto(true)
+  }
+
   function finalizarPedido(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+
+    if (!usuarioLogado || usuarioLogado.tipo !== 'Cliente') {
+      setCheckoutAberto(false)
+      setContinuarParaCheckout(true)
+      setMensagemLogin('Entre com uma conta de Cliente para finalizar o pedido.')
+      setLoginAberto(true)
+      return
+    }
+
+    const gruposRestaurante = Array.from(new Set(carrinho.map((item) => item.restauranteId)))
+    const novosPedidos: PedidoDemo[] = gruposRestaurante.map((restauranteId, indice) => {
+      const itensDoRestaurante = carrinho.filter((item) => item.restauranteId === restauranteId)
+      const restaurante = restaurantes.find((item) => item.id === restauranteId)
+
+      return {
+        id: Date.now() + indice,
+        restauranteId,
+        restauranteNome: restaurante?.nome ?? `Restaurante ${restauranteId}`,
+        clienteNome: usuarioLogado.nome,
+        itens: itensDoRestaurante,
+        total: itensDoRestaurante.reduce(
+          (soma, item) => soma + item.produto.preco * item.quantidade,
+          0,
+        ),
+        cep,
+        rua,
+        numero,
+        complemento,
+        bairro,
+        cidade,
+        estado,
+        formaPagamento,
+        status: 'Recebido',
+        criadoEm: new Date().toLocaleString('pt-BR'),
+      }
+    })
+
+    setPedidosDemo((atuais) => [...atuais, ...novosPedidos])
     setCarrinho([])
     setCheckoutAberto(false)
     setPedidoStatus(0)
@@ -348,8 +587,787 @@ function App() {
     }, 50)
   }
 
+  function abrirLogin() {
+    setMensagemLogin('')
+    setModoAutenticacao('login')
+    setContinuarParaCheckout(false)
+    setMostrarSenha(false)
+    setMostrarConfirmacao(false)
+    setLoginAberto(true)
+  }
+
+  function trocarModoAutenticacao(modo: ModoAutenticacao) {
+    setModoAutenticacao(modo)
+    setMensagemLogin('')
+    setMostrarSenha(false)
+    setMostrarConfirmacao(false)
+  }
+
+  function concluirAcesso(usuario: UsuarioDemo) {
+    setUsuarioLogado({
+      nome: usuario.nome,
+      email: usuario.email,
+      tipo: usuario.tipo,
+    })
+
+    setNomeCliente(usuario.nome)
+    setEmailLogin(usuario.email)
+    setSenhaLogin('')
+    setConfirmarSenha('')
+    setMensagemLogin('')
+    setMostrarSenha(false)
+    setMostrarConfirmacao(false)
+    setLoginAberto(false)
+
+    if (continuarParaCheckout && usuario.tipo === 'Cliente') {
+      setCheckoutAberto(true)
+    } else if (continuarParaCheckout && usuario.tipo !== 'Cliente') {
+      setMensagemCarrinho('Entre com uma conta de Cliente para realizar pedidos.')
+    }
+
+    setContinuarParaCheckout(false)
+  }
+
+  function realizarCadastro(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+
+    const email = emailLogin.trim().toLowerCase()
+    const telefone = telefoneCadastro.trim()
+
+    // O nome principal depende do tipo de conta.
+    const nome =
+      tipoConta === 'Restaurante'
+        ? nomeRestaurante.trim()
+        : nomeCadastro.trim()
+
+    if (!nome || !email || !telefone || !senhaLogin || !confirmarSenha) {
+      setMensagemLogin('Preencha todos os campos obrigatórios.')
+      return
+    }
+
+    if (telefone.replace(/\D/g, '').length < 10) {
+      setMensagemLogin('Informe um telefone válido com DDD.')
+      return
+    }
+
+    if (senhaLogin.length < 8) {
+      setMensagemLogin('A senha precisa ter pelo menos 8 caracteres.')
+      return
+    }
+
+    if (senhaLogin !== confirmarSenha) {
+      setMensagemLogin('As senhas não são iguais. Confira os dois campos.')
+      return
+    }
+
+    const emailExistente = usuariosDemo.some(
+      (usuario) => usuario.email.toLowerCase() === email,
+    )
+
+    if (emailExistente) {
+      setMensagemLogin('Este e-mail já possui cadastro. Faça login.')
+      return
+    }
+
+    const dadosAdicionais: Partial<UsuarioDemo> = {}
+
+    if (tipoConta === 'Restaurante') {
+      const cnpjLimpo = cnpjRestaurante.replace(/\D/g, '')
+      const cepLimpo = cepRestaurante.replace(/\D/g, '')
+
+      if (!responsavelRestaurante.trim()) {
+        setMensagemLogin('Informe o nome do responsável pelo restaurante.')
+        return
+      }
+
+      if (!semCnpj && cnpjLimpo.length !== 14) {
+        setMensagemLogin('Informe um CNPJ válido ou marque "Não tenho CNPJ".')
+        return
+      }
+
+      if (semCnpj && cnpjRestaurante.trim()) {
+        setMensagemLogin('Apague o CNPJ ou desmarque a opção "Não tenho CNPJ".')
+        return
+      }
+
+      if (!categoriaComida) {
+        setMensagemLogin('Selecione a categoria de comida do restaurante.')
+        return
+      }
+
+      if (
+        cepLimpo.length !== 8 ||
+        !ruaRestaurante.trim() ||
+        !numeroRestaurante.trim() ||
+        !bairroRestaurante.trim() ||
+        !cidadeRestaurante.trim() ||
+        !estadoRestaurante.trim()
+      ) {
+        setMensagemLogin('Preencha o endereço completo do restaurante.')
+        return
+      }
+
+      dadosAdicionais.nomeResponsavel = responsavelRestaurante.trim()
+      dadosAdicionais.cnpj = semCnpj ? '' : cnpjLimpo
+      dadosAdicionais.semCnpj = semCnpj
+      dadosAdicionais.categoriaComida = categoriaComida
+      dadosAdicionais.cep = cepLimpo
+      dadosAdicionais.rua = ruaRestaurante.trim()
+      dadosAdicionais.numero = numeroRestaurante.trim()
+      dadosAdicionais.complemento = complementoRestaurante.trim()
+      dadosAdicionais.bairro = bairroRestaurante.trim()
+      dadosAdicionais.cidade = cidadeRestaurante.trim()
+      dadosAdicionais.estado = estadoRestaurante.trim()
+    }
+
+    if (tipoConta === 'Entregador') {
+      const cpfLimpo = cpfCadastro.replace(/\D/g, '')
+      const anoAtual = new Date().getFullYear()
+      const anoInformado = Number(anoVeiculo)
+
+      if (!nomeCadastro.trim()) {
+        setMensagemLogin('Informe seu nome completo.')
+        return
+      }
+
+      if (cpfLimpo.length !== 11) {
+        setMensagemLogin('Informe um CPF válido com 11 números.')
+        return
+      }
+
+      if (
+        !tipoVeiculo ||
+        !marcaVeiculo.trim() ||
+        !modeloVeiculo.trim() ||
+        !anoVeiculo.trim() ||
+        !corVeiculo.trim()
+      ) {
+        setMensagemLogin('Preencha todos os dados do veículo.')
+        return
+      }
+
+      if (
+        !Number.isInteger(anoInformado) ||
+        anoInformado < 1900 ||
+        anoInformado > anoAtual + 1
+      ) {
+        setMensagemLogin('Informe um ano válido para o veículo.')
+        return
+      }
+
+      if (tipoVeiculo !== 'Bicicleta') {
+        if (!placaVeiculo.trim()) {
+          setMensagemLogin('Informe a placa do veículo.')
+          return
+        }
+
+        if (!numeroCnh.trim() || !categoriaCnh || !validadeCnh) {
+          setMensagemLogin('Preencha os dados da sua CNH.')
+          return
+        }
+      }
+
+      dadosAdicionais.cpf = cpfLimpo
+      dadosAdicionais.tipoVeiculo = tipoVeiculo
+      dadosAdicionais.marcaVeiculo = marcaVeiculo.trim()
+      dadosAdicionais.modeloVeiculo = modeloVeiculo.trim()
+      dadosAdicionais.anoVeiculo = anoVeiculo
+      dadosAdicionais.corVeiculo = corVeiculo.trim()
+      dadosAdicionais.placa = tipoVeiculo === 'Bicicleta' ? '' : placaVeiculo.trim()
+      dadosAdicionais.renavam = renavamVeiculo.trim()
+      dadosAdicionais.numeroCnh = tipoVeiculo === 'Bicicleta' ? '' : numeroCnh.trim()
+      dadosAdicionais.categoriaCnh = tipoVeiculo === 'Bicicleta' ? '' : categoriaCnh
+      dadosAdicionais.validadeCnh = tipoVeiculo === 'Bicicleta' ? '' : validadeCnh
+    }
+
+    const novoUsuario: UsuarioDemo = {
+      nome,
+      email,
+      telefone,
+      senha: senhaLogin,
+      tipo: tipoConta,
+      ...dadosAdicionais,
+    }
+
+    setUsuariosDemo((atuais) => [...atuais, novoUsuario])
+    concluirAcesso(novoUsuario)
+  }
+
+  function realizarLogin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+
+    const identificador = emailLogin.trim().toLowerCase()
+    const identificadorNumerico = identificador.replace(/\D/g, '')
+
+    if (!identificador || !senhaLogin) {
+      setMensagemLogin('Preencha seu e-mail, CPF ou CNPJ e sua senha.')
+      return
+    }
+
+    const usuario = usuariosDemo.find((item) => {
+      if (item.tipo !== tipoConta || item.senha !== senhaLogin) {
+        return false
+      }
+
+      const emailCorresponde = item.email.toLowerCase() === identificador
+      const cpfCorresponde =
+        tipoConta === 'Entregador' &&
+        !!item.cpf &&
+        item.cpf.replace(/\D/g, '') === identificadorNumerico
+      const cnpjCorresponde =
+        tipoConta === 'Restaurante' &&
+        !!item.cnpj &&
+        item.cnpj.replace(/\D/g, '') === identificadorNumerico
+
+      return emailCorresponde || cpfCorresponde || cnpjCorresponde
+    })
+
+    if (!usuario) {
+      setMensagemLogin(
+        'Conta não encontrada ou dados incorretos. Confira as informações ou crie uma conta.',
+      )
+      return
+    }
+
+    concluirAcesso(usuario)
+  }
+
+  function sairDaConta() {
+    setUsuarioLogado(null)
+    setEmailLogin('')
+    setSenhaLogin('')
+    setConfirmarSenha('')
+    setNomeCadastro('')
+    setTelefoneCadastro('')
+    setTipoConta('Cliente')
+    setContinuarParaCheckout(false)
+    setCorridaSelecionada(null)
+    setMensagemLogin('')
+  }
+
+  function atualizarStatusPedido(pedidoId: number, status: StatusPedido) {
+    setPedidosDemo((atuais) =>
+      atuais.map((pedido) => pedido.id === pedidoId ? { ...pedido, status } : pedido),
+    )
+  }
+
+  function aceitarCorrida(pedidoId: number) {
+    if (!usuarioLogado || usuarioLogado.tipo !== 'Entregador') return
+
+    setPedidosDemo((atuais) =>
+      atuais.map((pedido) =>
+        pedido.id === pedidoId && pedido.status === 'Pronto para retirada'
+          ? {
+              ...pedido,
+              status: 'Em rota',
+              entregadorNome: usuarioLogado.nome,
+              entregadorEmail: usuarioLogado.email,
+            }
+          : pedido,
+      ),
+    )
+    setCorridaSelecionada(pedidoId)
+  }
+
+  const pedidosDoRestaurante = usuarioLogado?.tipo === 'Restaurante'
+    ? pedidosDemo.filter((pedido) => pedido.restauranteNome.toLowerCase() === usuarioLogado.nome.toLowerCase())
+    : []
+
+  const corridasDisponiveis = pedidosDemo.filter((pedido) => pedido.status === 'Pronto para retirada')
+  const minhasCorridas = usuarioLogado?.tipo === 'Entregador'
+    ? pedidosDemo.filter((pedido) => pedido.status === 'Em rota' && pedido.entregadorEmail === usuarioLogado.email)
+    : []
+  const corridaAtual = pedidosDemo.find((pedido) => pedido.id === corridaSelecionada) ?? minhasCorridas[0] ?? null
+
+  const estilosPainel = `
+    .role-dashboard { min-height: 100vh; padding: 34px 7%; color: #f5f5f7; background: radial-gradient(ellipse at 85% 0%, rgba(139,92,255,.08), transparent 34%), #101014; }
+    .role-topbar { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:18px 7%; border-bottom:1px solid rgba(255,255,255,.09); background:#101014; }
+    .role-brand { color:#b7ff35; font-size:22px; font-weight:900; letter-spacing:1px; }
+    .role-user { display:flex; align-items:center; gap:14px; color:#aaa; font-size:13px; }
+    .role-logout { padding:10px 15px; border:1px solid rgba(255,255,255,.16); border-radius:8px; background:transparent; color:#fff; cursor:pointer; }
+    .role-heading { display:flex; align-items:flex-end; justify-content:space-between; gap:20px; margin:10px 0 28px; }
+    .role-eyebrow { color:#b7ff35; font-size:10px; font-weight:900; letter-spacing:2px; }
+    .role-heading h1 { margin:9px 0; font-size:clamp(28px,4vw,42px); font-weight:900; }
+    .role-heading p { color:#9999a4; font-size:13px; }
+    .role-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; margin-bottom:26px; }
+    .role-stat,.role-card { padding:20px; border:1px solid rgba(255,255,255,.09); border-radius:14px; background:#191920; }
+    .role-stat span { display:block; color:#9999a4; font-size:11px; }
+    .role-stat strong { display:block; margin-top:10px; color:#b7ff35; font-size:28px; }
+    .role-section-title { margin:28px 0 14px; font-size:18px; }
+    .role-orders { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+    .role-card-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; }
+    .role-card h3 { font-size:16px; }
+    .role-muted { color:#9999a4; font-size:12px; line-height:1.7; }
+    .role-status { padding:6px 9px; border-radius:20px; color:#b7ff35; background:rgba(183,255,53,.1); font-size:10px; font-weight:800; white-space:nowrap; }
+    .role-items { margin:14px 0; padding:12px 0; border-top:1px solid rgba(255,255,255,.08); border-bottom:1px solid rgba(255,255,255,.08); color:#ddd; font-size:12px; line-height:1.9; }
+    .role-actions { display:flex; flex-wrap:wrap; gap:9px; margin-top:16px; }
+    .role-primary,.role-secondary,.role-danger { padding:11px 14px; border:0; border-radius:8px; font-size:11px; font-weight:900; cursor:pointer; }
+    .role-primary { color:#101014; background:#b7ff35; }
+    .role-secondary { color:#ddd; background:#30303a; }
+    .role-danger { color:#ff9292; background:rgba(255,75,75,.12); }
+    .role-empty { padding:35px 20px; border:1px dashed rgba(255,255,255,.16); border-radius:14px; color:#9999a4; text-align:center; line-height:1.8; }
+    .courier-layout { display:grid; grid-template-columns:minmax(300px,.9fr) minmax(0,1.1fr); gap:18px; align-items:start; }
+    .courier-list { display:grid; gap:12px; }
+    .courier-map { min-height:420px; overflow:hidden; border:1px solid rgba(255,255,255,.1); border-radius:14px; background:#191920; }
+    .courier-map-title { padding:17px 19px; color:#b7ff35; font-size:11px; font-weight:900; letter-spacing:1px; }
+    .role-dashboard .delivery-map { height:390px; min-height:390px; }
+    @media(max-width:800px) { .role-dashboard {padding:24px 5%;} .role-topbar {padding:16px 5%;} .role-orders,.courier-layout {grid-template-columns:1fr;} .role-stats {grid-template-columns:1fr;} .role-heading {align-items:flex-start; flex-direction:column;} }
+  `
+
+  if (usuarioLogado?.tipo === 'Restaurante') {
+    const recebidos = pedidosDoRestaurante.filter((pedido) => pedido.status === 'Recebido').length
+    const emPreparo = pedidosDoRestaurante.filter((pedido) => ['Aceito', 'Preparando'].includes(pedido.status)).length
+    const concluidos = pedidosDoRestaurante.filter((pedido) => pedido.status === 'Entregue').length
+
+    return (
+      <div className="app">
+        <style>{estilosPainel}</style>
+        <header className="role-topbar">
+          <div className="role-brand">ENTREGAÊ <span style={{color:'#fff'}}>· PAINEL DO RESTAURANTE</span></div>
+          <div className="role-user"><span>{usuarioLogado.nome}</span><button className="role-logout" onClick={sairDaConta}>Sair</button></div>
+        </header>
+        <main className="role-dashboard">
+          <div className="role-heading">
+            <div><span className="role-eyebrow">ÁREA DO ESTABELECIMENTO</span><h1>Olá, {usuarioLogado.nome}!</h1><p>Acompanhe os pedidos e atualize cada etapa da preparação.</p></div>
+          </div>
+          <div className="role-stats">
+            <div className="role-stat"><span>Pedidos recebidos</span><strong>{recebidos}</strong></div>
+            <div className="role-stat"><span>Em preparação</span><strong>{emPreparo}</strong></div>
+            <div className="role-stat"><span>Entregues</span><strong>{concluidos}</strong></div>
+          </div>
+          <h2 className="role-section-title">Pedidos do estabelecimento</h2>
+          {pedidosDoRestaurante.length === 0 ? (
+            <div className="role-empty">Nenhum pedido recebido ainda.<br/>Quando um cliente fizer um pedido neste estabelecimento, ele aparecerá aqui.</div>
+          ) : (
+            <div className="role-orders">
+              {pedidosDoRestaurante.slice().reverse().map((pedido) => (
+                <article className="role-card" key={pedido.id}>
+                  <div className="role-card-head"><h3>Pedido #{pedido.id.toString().slice(-6)}</h3><span className="role-status">{pedido.status}</span></div>
+                  <p className="role-muted">Cliente: <strong>{pedido.clienteNome}</strong><br/>Recebido em: {pedido.criadoEm}</p>
+                  <div className="role-items">{pedido.itens.map((item) => <div key={item.produto.id}>{item.quantidade}x {item.produto.nome} — {formatarPreco(item.produto.preco * item.quantidade)}</div>)}</div>
+                  <p className="role-muted">Total: <strong style={{color:'#b7ff35'}}>{formatarPreco(pedido.total)}</strong><br/>Pagamento: {pedido.formaPagamento}<br/>Entrega: {pedido.rua}, {pedido.numero} — {pedido.bairro}, {pedido.cidade}/{pedido.estado}</p>
+                  <div className="role-actions">
+                    {pedido.status === 'Recebido' && <><button className="role-primary" onClick={() => atualizarStatusPedido(pedido.id, 'Aceito')}>Aceitar pedido</button><button className="role-danger" onClick={() => atualizarStatusPedido(pedido.id, 'Recusado')}>Recusar</button></>}
+                    {pedido.status === 'Aceito' && <button className="role-primary" onClick={() => atualizarStatusPedido(pedido.id, 'Preparando')}>Iniciar preparo</button>}
+                    {pedido.status === 'Preparando' && <button className="role-primary" onClick={() => atualizarStatusPedido(pedido.id, 'Pronto para retirada')}>Pedido pronto</button>}
+                    {pedido.status === 'Pronto para retirada' && <span className="role-muted">Aguardando um entregador aceitar a corrida.</span>}
+                    {pedido.status === 'Em rota' && <span className="role-muted">Entregador: {pedido.entregadorNome || 'A caminho'}.</span>}
+                    {pedido.status === 'Entregue' && <span className="role-muted">Entrega concluída.</span>}
+                    {pedido.status === 'Recusado' && <span className="role-muted">Pedido recusado.</span>}
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </main>
+      </div>
+    )
+  }
+
+  if (usuarioLogado?.tipo === 'Entregador') {
+    return (
+      <div className="app">
+        <style>{estilosPainel}</style>
+        <header className="role-topbar">
+          <div className="role-brand">ENTREGAÊ <span style={{color:'#fff'}}>· CENTRAL DO ENTREGADOR</span></div>
+          <div className="role-user"><span>{usuarioLogado.nome}</span><button className="role-logout" onClick={sairDaConta}>Sair</button></div>
+        </header>
+        <main className="role-dashboard">
+          <div className="role-heading"><div><span className="role-eyebrow">ÁREA DO PARCEIRO</span><h1>Olá, {usuarioLogado.nome}!</h1><p>Encontre corridas, aceite entregas e acompanhe os destinos pelo mapa.</p></div></div>
+          <div className="role-stats">
+            <div className="role-stat"><span>Corridas disponíveis</span><strong>{corridasDisponiveis.length}</strong></div>
+            <div className="role-stat"><span>Minhas entregas</span><strong>{minhasCorridas.length}</strong></div>
+            <div className="role-stat"><span>Veículo</span><strong style={{fontSize:18}}>{usuariosDemo.find((u) => u.email === usuarioLogado.email)?.tipoVeiculo || '—'}</strong></div>
+          </div>
+          <div className="courier-layout">
+            <section>
+              <h2 className="role-section-title">Corridas disponíveis</h2>
+              <div className="courier-list">
+                {corridasDisponiveis.length === 0 ? <div className="role-empty">Nenhuma corrida disponível no momento.<br/>Quando um restaurante marcar um pedido como pronto, a corrida aparecerá aqui.</div> : corridasDisponiveis.map((pedido) => (
+                  <article className="role-card" key={pedido.id}>
+                    <div className="role-card-head"><h3>Corrida #{pedido.id.toString().slice(-6)}</h3><span className="role-status">Disponível</span></div>
+                    <p className="role-muted">Retirada: <strong>{pedido.restauranteNome}</strong><br/>Entrega: {pedido.rua}, {pedido.numero} — {pedido.bairro}, {pedido.cidade}/{pedido.estado}<br/>Cliente: {pedido.clienteNome}</p>
+                    <p style={{marginTop:12,color:'#b7ff35',fontWeight:800}}>{formatarPreco(pedido.total)}</p>
+                    <div className="role-actions"><button className="role-secondary" onClick={() => setCorridaSelecionada(pedido.id)}>Ver mapa</button><button className="role-primary" onClick={() => aceitarCorrida(pedido.id)}>Aceitar corrida</button></div>
+                  </article>
+                ))}
+              </div>
+              <h2 className="role-section-title">Minhas corridas</h2>
+              <div className="courier-list">
+                {minhasCorridas.length === 0 ? <div className="role-empty">Você ainda não aceitou nenhuma corrida.</div> : minhasCorridas.map((pedido) => (
+                  <article className="role-card" key={pedido.id}>
+                    <div className="role-card-head"><h3>Pedido #{pedido.id.toString().slice(-6)}</h3><span className="role-status">Em rota</span></div>
+                    <p className="role-muted">Retirada: {pedido.restauranteNome}<br/>Destino: {pedido.rua}, {pedido.numero} — {pedido.bairro}, {pedido.cidade}/{pedido.estado}</p>
+                    <div className="role-actions"><button className="role-secondary" onClick={() => setCorridaSelecionada(pedido.id)}>Ver mapa</button><button className="role-primary" onClick={() => atualizarStatusPedido(pedido.id, 'Entregue')}>Confirmar entrega</button></div>
+                  </article>
+                ))}
+              </div>
+            </section>
+            <section className="courier-map">
+              <div className="courier-map-title">MAPA DA ENTREGA {corridaAtual ? `· PEDIDO #${corridaAtual.id.toString().slice(-6)}` : ''}</div>
+              {corridaAtual ? <DeliveryMap rua={corridaAtual.rua} numero={corridaAtual.numero} bairro={corridaAtual.bairro} cidade={corridaAtual.cidade} estado={corridaAtual.estado} cep={corridaAtual.cep} /> : <div className="role-empty" style={{margin:18}}>Selecione uma corrida para visualizar o endereço de entrega no mapa.</div>}
+            </section>
+          </div>
+        </main>
+      </div>
+    )
+  }
+
   return (
     <div className="app">
+      <style>{`
+        .login-overlay {
+          position: fixed;
+          inset: 0;
+          z-index: 3000;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+          overflow-y: auto;
+          background: rgba(0, 0, 0, 0.82);
+          backdrop-filter: blur(12px);
+        }
+
+        .login-modal {
+          position: relative;
+          width: 100%;
+          max-width: 560px;
+          max-height: calc(100vh - 40px);
+          overflow-y: auto;
+          padding: 38px;
+          border: 1px solid rgba(183, 255, 53, 0.2);
+          border-radius: 22px;
+          background: #191920;
+          box-shadow: 0 25px 90px rgba(0, 0, 0, 0.55);
+        }
+
+        .login-close {
+          position: absolute;
+          top: 16px;
+          right: 18px;
+          width: 36px;
+          height: 36px;
+          border: 1px solid rgba(255,255,255,.12);
+          border-radius: 10px;
+          background: transparent;
+          color: white;
+          font-size: 25px;
+          cursor: pointer;
+        }
+
+        .login-brand {
+          margin-bottom: 28px;
+          color: #b7ff35;
+          font-size: 12px;
+          font-weight: 800;
+          letter-spacing: 3px;
+        }
+
+        .login-modal h2 {
+          margin: 0 0 10px;
+          color: #fff;
+          font-size: 30px;
+          font-weight: 800;
+        }
+
+        .login-description {
+          margin: 0 0 26px;
+          color: #a5a5ad;
+          font-size: 14px;
+          line-height: 1.6;
+        }
+
+        .login-role-title {
+          display: block;
+          margin-bottom: 12px;
+          color: #ddd;
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 1.5px;
+        }
+
+        .login-roles {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 8px;
+          margin-bottom: 22px;
+        }
+
+        .login-role {
+          padding: 13px 5px;
+          border: 1px solid rgba(255,255,255,.12);
+          border-radius: 10px;
+          background: #222229;
+          color: #aaa;
+          font-size: 12px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: .2s;
+        }
+
+        .login-role.active {
+          border-color: #b7ff35;
+          background: rgba(183,255,53,.1);
+          color: #b7ff35;
+        }
+
+        .login-field {
+          display: block;
+          margin-bottom: 17px;
+          color: #ddd;
+          font-size: 13px;
+          font-weight: 600;
+        }
+
+        .login-field input,
+        .login-field select {
+          display: block;
+          width: 100%;
+          box-sizing: border-box;
+          margin-top: 8px;
+          padding: 14px;
+          border: 1px solid rgba(255,255,255,.13);
+          border-radius: 10px;
+          outline: none;
+          background: #101014;
+          color: white;
+          font: inherit;
+        }
+
+        .login-field select {
+          cursor: pointer;
+        }
+
+        .login-field input:focus,
+        .login-field select:focus {
+          border-color: #b7ff35;
+          box-shadow: 0 0 0 2px rgba(183,255,53,.1);
+        }
+
+        .login-field input:disabled {
+          opacity: .5;
+          cursor: not-allowed;
+        }
+
+        .password-input-wrap {
+          position: relative;
+          margin-top: 8px;
+        }
+
+        .password-input-wrap input {
+          width: 100%;
+          box-sizing: border-box;
+          margin: 0;
+          padding: 14px 48px 14px 14px;
+          border: 1px solid rgba(255,255,255,.13);
+          border-radius: 10px;
+          outline: none;
+          background: #101014;
+          color: white;
+          font: inherit;
+        }
+
+        .password-input-wrap input:focus {
+          border-color: #b7ff35;
+          box-shadow: 0 0 0 2px rgba(183,255,53,.1);
+        }
+
+        .password-eye {
+          position: absolute;
+          top: 50%;
+          right: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 30px;
+          height: 30px;
+          transform: translateY(-50%);
+          border: 0;
+          background: transparent;
+          color: #a5a5ad;
+          cursor: pointer;
+        }
+
+        .password-eye:hover {
+          color: #b7ff35;
+        }
+
+        .password-eye svg {
+          width: 20px;
+          height: 20px;
+        }
+
+        .login-submit {
+          width: 100%;
+          margin-top: 8px;
+          padding: 15px;
+          border: 0;
+          border-radius: 10px;
+          background: #b7ff35;
+          color: #101014;
+          font-size: 12px;
+          font-weight: 900;
+          letter-spacing: 1px;
+          cursor: pointer;
+          transition: .2s;
+        }
+
+        .login-submit:hover {
+          transform: translateY(-2px);
+          filter: brightness(1.08);
+        }
+
+        .login-error {
+          margin: 0 0 12px;
+          color: #ff7777;
+          font-size: 13px;
+          line-height: 1.5;
+        }
+
+        .login-demo-note {
+          margin: 18px 0 0;
+          color: #85858e;
+          font-size: 11px;
+          line-height: 1.5;
+          text-align: center;
+        }
+
+        .login-switch {
+          margin: 20px 0 0;
+          color: #aaa;
+          font-size: 13px;
+          text-align: center;
+        }
+
+        .login-switch button {
+          border: 0;
+          background: transparent;
+          color: #b7ff35;
+          font: inherit;
+          font-weight: 800;
+          cursor: pointer;
+        }
+
+        .login-header-button {
+          padding: 11px 17px;
+          border: 1px solid #b7ff35;
+          border-radius: 9px;
+          background: transparent;
+          color: #b7ff35;
+          font-size: 12px;
+          font-weight: 800;
+          cursor: pointer;
+          transition: .2s;
+        }
+
+        .login-header-button:hover {
+          background: #b7ff35;
+          color: #101014;
+        }
+
+        .login-user-info {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          color: #ddd;
+          font-size: 12px;
+        }
+
+        .login-user-info strong {
+          color: #b7ff35;
+        }
+
+        .login-logout-button {
+          padding: 8px 10px;
+          border: 1px solid rgba(255,255,255,.15);
+          border-radius: 8px;
+          background: transparent;
+          color: #ddd;
+          font-size: 11px;
+          cursor: pointer;
+        }
+
+        .register-section {
+          margin: 22px 0;
+          padding: 18px;
+          border: 1px solid rgba(183,255,53,.15);
+          border-radius: 12px;
+          background: rgba(255,255,255,.025);
+        }
+
+        .register-section-title {
+          margin: 0 0 16px;
+          color: #b7ff35;
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 1.5px;
+        }
+
+        .register-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 0 14px;
+        }
+
+        .register-grid .login-field {
+          min-width: 0;
+        }
+
+        .register-checkbox {
+          display: flex;
+          align-items: center;
+          gap: 9px;
+          margin: -5px 0 17px;
+          color: #ccc;
+          font-size: 12px;
+          cursor: pointer;
+        }
+
+        .register-checkbox input {
+          width: 16px;
+          height: 16px;
+          margin: 0;
+          accent-color: #b7ff35;
+        }
+
+        .register-message {
+          margin: 0 0 16px;
+          padding: 12px;
+          border-radius: 9px;
+          background: rgba(183,255,53,.08);
+          color: #b7ff35;
+          font-size: 12px;
+          line-height: 1.5;
+        }
+
+        .register-help {
+          margin: -8px 0 16px;
+          color: #92929b;
+          font-size: 11px;
+          line-height: 1.5;
+        }
+
+        @media (max-width: 760px) {
+          .login-modal {
+            padding: 30px 22px;
+          }
+
+          .login-user-info {
+            flex-wrap: wrap;
+            justify-content: flex-end;
+          }
+
+          .login-header-button {
+            padding: 9px 12px;
+          }
+
+          .register-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
+
       {mensagemCarrinho && (
         <div className="cart-toast" role="status" aria-live="polite">
           <span>✓</span>
@@ -358,9 +1376,9 @@ function App() {
       )}
 
       <header className="topbar">
-      <a className="logo" href="#inicio" aria-label="Entregaê - Início">
-  <img src="/logo-entregae.png" alt="ENTREGAÊ - Delivery Experience" />
-</a>
+        <a className="logo" href="#inicio" aria-label="Entregaê - Início">
+          <img src="/logo-entregae.png" alt="ENTREGAÊ - Delivery Experience" />
+        </a>
 
         <nav className="nav-links">
           <a className="nav-active" href="#inicio">Início</a>
@@ -374,6 +1392,21 @@ function App() {
             <span />
             API {apiOnline ? 'online' : 'offline'}
           </div>
+
+          {usuarioLogado ? (
+            <div className="login-user-info">
+              <span>
+                Olá, <strong>{usuarioLogado.nome}</strong>
+              </span>
+              <button className="login-logout-button" onClick={sairDaConta}>
+                Sair
+              </button>
+            </div>
+          ) : (
+            <button className="login-header-button" onClick={abrirLogin}>
+              ENTRAR
+            </button>
+          )}
 
           <button
             className="cart-button"
@@ -685,14 +1718,664 @@ function App() {
         </section>
       </main>
 
-     <footer className="footer">
-  <a className="logo" href="#inicio" aria-label="Entregaê - Início">
-    <img src="/logo-entregae.png" alt="ENTREGAÊ - Delivery Experience" />
-  </a>
+      <footer className="footer">
+        <a className="logo" href="#inicio" aria-label="Entregaê - Início">
+          <img src="/logo-entregae.png" alt="ENTREGAÊ - Delivery Experience" />
+        </a>
 
-  <p>SEU PEDIDO. SEU TEMPO. NOSSO COMPROMISSO.</p>
-  <span>© 2026 ENTREGAÊ · TODOS OS DIREITOS RESERVADOS</span>
-</footer>
+        <p>SEU PEDIDO. SEU TEMPO. NOSSO COMPROMISSO.</p>
+        <span>© 2026 ENTREGAÊ · TODOS OS DIREITOS RESERVADOS</span>
+      </footer>
+
+      {/* MODAL DE LOGIN E CADASTRO */}
+      {loginAberto && (
+        <div
+          className="login-overlay"
+          onClick={() => {
+            setLoginAberto(false)
+            setContinuarParaCheckout(false)
+          }}
+        >
+          <div
+            className="login-modal"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="login-title"
+          >
+            <button
+              className="login-close"
+              onClick={() => {
+                setLoginAberto(false)
+                setContinuarParaCheckout(false)
+              }}
+              aria-label="Fechar acesso"
+            >
+              ×
+            </button>
+
+            <div className="login-brand">ENTREGAÊ / ACESSO</div>
+
+            <h2 id="login-title">
+              {modoAutenticacao === 'login' ? 'Bem-vindo!' : 'Criar minha conta'}
+            </h2>
+
+            <p className="login-description">
+              {modoAutenticacao === 'login'
+                ? 'Entre na sua conta para aproveitar sua experiência no Entregaê.'
+                : 'Preencha seus dados para fazer parte do Entregaê.'}
+            </p>
+
+            <form
+              onSubmit={modoAutenticacao === 'login' ? realizarLogin : realizarCadastro}
+            >
+              <span className="login-role-title">TIPO DE CONTA</span>
+
+              <div className="login-roles">
+                {(['Cliente', 'Restaurante', 'Entregador'] as TipoConta[]).map((tipo) => (
+                  <button
+                    key={tipo}
+                    type="button"
+                    className={`login-role ${tipoConta === tipo ? 'active' : ''}`}
+                    onClick={() => {
+                      setTipoConta(tipo)
+                      setMensagemLogin('')
+                    }}
+                  >
+                    {tipo}
+                  </button>
+                ))}
+              </div>
+
+              {modoAutenticacao === 'cadastro' && (
+                <>
+                  {/* CADASTRO DE CLIENTE */}
+                  {tipoConta === 'Cliente' && (
+                    <>
+                      <label className="login-field" htmlFor="nomeCadastro">
+                        Nome completo
+                        <input
+                          id="nomeCadastro"
+                          type="text"
+                          placeholder="Digite seu nome completo"
+                          value={nomeCadastro}
+                          onChange={(e) => setNomeCadastro(e.target.value)}
+                          autoComplete="name"
+                          required
+                        />
+                      </label>
+
+                      <label className="login-field" htmlFor="telefoneCadastro">
+                        Telefone
+                        <input
+                          id="telefoneCadastro"
+                          type="tel"
+                          placeholder="(11) 99999-9999"
+                          value={telefoneCadastro}
+                          onChange={(e) => setTelefoneCadastro(e.target.value)}
+                          autoComplete="tel"
+                          required
+                        />
+                      </label>
+                    </>
+                  )}
+
+                  {/* CADASTRO DE RESTAURANTE */}
+                  {tipoConta === 'Restaurante' && (
+                    <div className="register-section">
+                      <h3 className="register-section-title">
+                        DADOS DO RESTAURANTE
+                      </h3>
+
+                      <label className="login-field" htmlFor="nomeRestaurante">
+                        Nome do estabelecimento
+                        <input
+                          id="nomeRestaurante"
+                          type="text"
+                          placeholder="Ex.: Restaurante Sabor da Casa"
+                          value={nomeRestaurante}
+                          onChange={(e) => setNomeRestaurante(e.target.value)}
+                          required
+                        />
+                      </label>
+
+                      <label className="login-field" htmlFor="responsavelRestaurante">
+                        Nome do responsável
+                        <input
+                          id="responsavelRestaurante"
+                          type="text"
+                          placeholder="Nome completo do responsável"
+                          value={responsavelRestaurante}
+                          onChange={(e) => setResponsavelRestaurante(e.target.value)}
+                          required
+                        />
+                      </label>
+
+                      <label className="login-field" htmlFor="cnpjRestaurante">
+                        CNPJ
+                        <input
+                          id="cnpjRestaurante"
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="00.000.000/0000-00"
+                          value={cnpjRestaurante}
+                          onChange={(e) =>
+                            setCnpjRestaurante(e.target.value.replace(/\D/g, '').slice(0, 14))
+                          }
+                          disabled={semCnpj}
+                          required={!semCnpj}
+                        />
+                      </label>
+
+                      <label className="register-checkbox">
+                        <input
+                          type="checkbox"
+                          checked={semCnpj}
+                          onChange={(e) => {
+                            setSemCnpj(e.target.checked)
+                            if (e.target.checked) setCnpjRestaurante('')
+                          }}
+                        />
+                        Não tenho CNPJ
+                      </label>
+
+                      <label className="login-field" htmlFor="categoriaComida">
+                        Tipo de comida
+                        <select
+                          id="categoriaComida"
+                          value={categoriaComida}
+                          onChange={(e) => setCategoriaComida(e.target.value)}
+                          required
+                        >
+                          <option value="">Selecione uma categoria</option>
+                          <option value="Hambúrguer">Hambúrguer</option>
+                          <option value="Pizza">Pizza</option>
+                          <option value="Japonesa">Comida japonesa</option>
+                          <option value="Brasileira">Comida brasileira</option>
+                          <option value="Lanches">Lanches</option>
+                          <option value="Italiana">Comida italiana</option>
+                          <option value="Mexicana">Comida mexicana</option>
+                          <option value="Saudável">Comida saudável</option>
+                          <option value="Sobremesas">Sobremesas</option>
+                          <option value="Outros">Outros</option>
+                        </select>
+                      </label>
+
+                      <h3 className="register-section-title">
+                        ENDEREÇO DO ESTABELECIMENTO
+                      </h3>
+
+                      <label className="login-field" htmlFor="cepRestaurante">
+                        CEP
+                        <input
+                          id="cepRestaurante"
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="00000-000"
+                          value={cepRestaurante}
+                          onChange={(e) => alterarCEPRestaurante(e.target.value)}
+                          onBlur={() => consultarCEPRestaurante(cepRestaurante)}
+                          maxLength={9}
+                          required
+                        />
+                      </label>
+
+                      {cepRestauranteCarregando && (
+                        <p className="register-help">Consultando CEP...</p>
+                      )}
+
+                      {cepRestauranteErro && (
+                        <p className="login-error">{cepRestauranteErro}</p>
+                      )}
+
+                      <label className="login-field" htmlFor="ruaRestaurante">
+                        Rua / Avenida
+                        <input
+                          id="ruaRestaurante"
+                          type="text"
+                          placeholder="Rua do estabelecimento"
+                          value={ruaRestaurante}
+                          onChange={(e) => setRuaRestaurante(e.target.value)}
+                          required
+                        />
+                      </label>
+
+                      <div className="register-grid">
+                        <label className="login-field" htmlFor="numeroRestaurante">
+                          Número
+                          <input
+                            id="numeroRestaurante"
+                            type="text"
+                            placeholder="Número"
+                            value={numeroRestaurante}
+                            onChange={(e) => setNumeroRestaurante(e.target.value)}
+                            required
+                          />
+                        </label>
+
+                        <label className="login-field" htmlFor="complementoRestaurante">
+                          Complemento
+                          <input
+                            id="complementoRestaurante"
+                            type="text"
+                            placeholder="Sala, loja..."
+                            value={complementoRestaurante}
+                            onChange={(e) => setComplementoRestaurante(e.target.value)}
+                          />
+                        </label>
+                      </div>
+
+                      <label className="login-field" htmlFor="bairroRestaurante">
+                        Bairro
+                        <input
+                          id="bairroRestaurante"
+                          type="text"
+                          placeholder="Bairro"
+                          value={bairroRestaurante}
+                          onChange={(e) => setBairroRestaurante(e.target.value)}
+                          required
+                        />
+                      </label>
+
+                      <div className="register-grid">
+                        <label className="login-field" htmlFor="cidadeRestaurante">
+                          Cidade
+                          <input
+                            id="cidadeRestaurante"
+                            type="text"
+                            placeholder="Cidade"
+                            value={cidadeRestaurante}
+                            onChange={(e) => setCidadeRestaurante(e.target.value)}
+                            required
+                          />
+                        </label>
+
+                        <label className="login-field" htmlFor="estadoRestaurante">
+                          Estado
+                          <input
+                            id="estadoRestaurante"
+                            type="text"
+                            placeholder="UF"
+                            value={estadoRestaurante}
+                            onChange={(e) => setEstadoRestaurante(e.target.value)}
+                            maxLength={2}
+                            required
+                          />
+                        </label>
+                      </div>
+
+                      <label className="login-field" htmlFor="telefoneCadastroRestaurante">
+                        Telefone do restaurante
+                        <input
+                          id="telefoneCadastroRestaurante"
+                          type="tel"
+                          placeholder="(11) 99999-9999"
+                          value={telefoneCadastro}
+                          onChange={(e) => setTelefoneCadastro(e.target.value)}
+                          required
+                        />
+                      </label>
+                    </div>
+                  )}
+
+                  {/* CADASTRO DE ENTREGADOR */}
+                  {tipoConta === 'Entregador' && (
+                    <div className="register-section">
+                      <h3 className="register-section-title">
+                        DADOS PESSOAIS
+                      </h3>
+
+                      <label className="login-field" htmlFor="nomeEntregador">
+                        Nome completo
+                        <input
+                          id="nomeEntregador"
+                          type="text"
+                          placeholder="Digite seu nome completo"
+                          value={nomeCadastro}
+                          onChange={(e) => setNomeCadastro(e.target.value)}
+                          autoComplete="name"
+                          required
+                        />
+                      </label>
+
+                      <label className="login-field" htmlFor="cpfCadastro">
+                        CPF
+                        <input
+                          id="cpfCadastro"
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="000.000.000-00"
+                          value={cpfCadastro}
+                          onChange={(e) =>
+                            setCpfCadastro(e.target.value.replace(/\D/g, '').slice(0, 11))
+                          }
+                          required
+                        />
+                      </label>
+
+                      <label className="login-field" htmlFor="telefoneCadastroEntregador">
+                        Telefone
+                        <input
+                          id="telefoneCadastroEntregador"
+                          type="tel"
+                          placeholder="(11) 99999-9999"
+                          value={telefoneCadastro}
+                          onChange={(e) => setTelefoneCadastro(e.target.value)}
+                          required
+                        />
+                      </label>
+
+                      <h3 className="register-section-title">
+                        DADOS DO VEÍCULO
+                      </h3>
+
+                      <label className="login-field" htmlFor="tipoVeiculo">
+                        Tipo de veículo
+                        <select
+                          id="tipoVeiculo"
+                          value={tipoVeiculo}
+                          onChange={(e) => setTipoVeiculo(e.target.value)}
+                          required
+                        >
+                          <option value="Moto">Moto</option>
+                          <option value="Bicicleta">Bicicleta</option>
+                          <option value="Carro">Carro</option>
+                        </select>
+                      </label>
+
+                      <div className="register-grid">
+                        <label className="login-field" htmlFor="marcaVeiculo">
+                          Marca
+                          <input
+                            id="marcaVeiculo"
+                            type="text"
+                            placeholder="Ex.: Honda"
+                            value={marcaVeiculo}
+                            onChange={(e) => setMarcaVeiculo(e.target.value)}
+                            required
+                          />
+                        </label>
+
+                        <label className="login-field" htmlFor="modeloVeiculo">
+                          Modelo
+                          <input
+                            id="modeloVeiculo"
+                            type="text"
+                            placeholder="Ex.: CG 160"
+                            value={modeloVeiculo}
+                            onChange={(e) => setModeloVeiculo(e.target.value)}
+                            required
+                          />
+                        </label>
+                      </div>
+
+                      <div className="register-grid">
+                        <label className="login-field" htmlFor="anoVeiculo">
+                          Ano
+                          <input
+                            id="anoVeiculo"
+                            type="number"
+                            placeholder="Ex.: 2022"
+                            min="1900"
+                            max={new Date().getFullYear() + 1}
+                            value={anoVeiculo}
+                            onChange={(e) => setAnoVeiculo(e.target.value)}
+                            required
+                          />
+                        </label>
+
+                        <label className="login-field" htmlFor="corVeiculo">
+                          Cor
+                          <input
+                            id="corVeiculo"
+                            type="text"
+                            placeholder="Ex.: Preto"
+                            value={corVeiculo}
+                            onChange={(e) => setCorVeiculo(e.target.value)}
+                            required
+                          />
+                        </label>
+                      </div>
+
+                      {tipoVeiculo !== 'Bicicleta' ? (
+                        <>
+                          <h3 className="register-section-title">
+                            DOCUMENTAÇÃO DO VEÍCULO
+                          </h3>
+
+                          <label className="login-field" htmlFor="placaVeiculo">
+                            Placa
+                            <input
+                              id="placaVeiculo"
+                              type="text"
+                              placeholder="ABC1D23"
+                              value={placaVeiculo}
+                              onChange={(e) =>
+                                setPlacaVeiculo(e.target.value.toUpperCase().slice(0, 7))
+                              }
+                              required
+                            />
+                          </label>
+
+                          <label className="login-field" htmlFor="renavamVeiculo">
+                            RENAVAM (opcional)
+                            <input
+                              id="renavamVeiculo"
+                              type="text"
+                              inputMode="numeric"
+                              placeholder="Número do RENAVAM"
+                              value={renavamVeiculo}
+                              onChange={(e) =>
+                                setRenavamVeiculo(e.target.value.replace(/\D/g, '').slice(0, 11))
+                              }
+                            />
+                          </label>
+
+                          <h3 className="register-section-title">
+                            CARTEIRA NACIONAL DE HABILITAÇÃO
+                          </h3>
+
+                          <label className="login-field" htmlFor="numeroCnh">
+                            Número da CNH
+                            <input
+                              id="numeroCnh"
+                              type="text"
+                              inputMode="numeric"
+                              placeholder="Número da CNH"
+                              value={numeroCnh}
+                              onChange={(e) =>
+                                setNumeroCnh(e.target.value.replace(/\D/g, '').slice(0, 11))
+                              }
+                              required
+                            />
+                          </label>
+
+                          <div className="register-grid">
+                            <label className="login-field" htmlFor="categoriaCnh">
+                              Categoria da CNH
+                              <select
+                                id="categoriaCnh"
+                                value={categoriaCnh}
+                                onChange={(e) => setCategoriaCnh(e.target.value)}
+                                required
+                              >
+                                <option value="">Selecione</option>
+                                <option value="A">A</option>
+                                <option value="B">B</option>
+                                <option value="AB">AB</option>
+                                <option value="C">C</option>
+                                <option value="D">D</option>
+                                <option value="E">E</option>
+                              </select>
+                            </label>
+
+                            <label className="login-field" htmlFor="validadeCnh">
+                              Validade da CNH
+                              <input
+                                id="validadeCnh"
+                                type="date"
+                                value={validadeCnh}
+                                onChange={(e) => setValidadeCnh(e.target.value)}
+                                required
+                              />
+                            </label>
+                          </div>
+                        </>
+                      ) : (
+                        <p className="register-message">
+                          Para entregadores que utilizam bicicleta, não é necessário
+                          informar placa, RENAVAM ou CNH.
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+
+              <label className="login-field" htmlFor="emailLogin">
+                {modoAutenticacao === 'cadastro'
+                  ? 'E-mail'
+                  : tipoConta === 'Entregador'
+                    ? 'E-mail ou CPF'
+                    : tipoConta === 'Restaurante'
+                      ? 'E-mail ou CNPJ'
+                      : 'E-mail'}
+                <input
+                  id="emailLogin"
+                  type={modoAutenticacao === 'cadastro' ? 'email' : 'text'}
+                  placeholder={
+                    modoAutenticacao === 'cadastro'
+                      ? 'seuemail@exemplo.com'
+                      : tipoConta === 'Entregador'
+                        ? 'Digite seu e-mail ou CPF'
+                        : tipoConta === 'Restaurante'
+                          ? 'Digite seu e-mail ou CNPJ'
+                          : 'Digite seu e-mail'
+                  }
+                  value={emailLogin}
+                  onChange={(e) => setEmailLogin(e.target.value)}
+                  autoComplete={modoAutenticacao === 'login' ? 'username' : 'email'}
+                  required
+                />
+              </label>
+
+              <label className="login-field" htmlFor="senhaLogin">
+                Senha
+                <div className="password-input-wrap">
+                  <input
+                    id="senhaLogin"
+                    type={mostrarSenha ? 'text' : 'password'}
+                    placeholder={modoAutenticacao === 'cadastro' ? 'Crie uma senha' : 'Digite sua senha'}
+                    value={senhaLogin}
+                    onChange={(e) => setSenhaLogin(e.target.value)}
+                    autoComplete={modoAutenticacao === 'login' ? 'current-password' : 'new-password'}
+                    minLength={modoAutenticacao === 'cadastro' ? 8 : undefined}
+                    required
+                  />
+
+                  <button
+                    className="password-eye"
+                    type="button"
+                    onClick={() => setMostrarSenha((atual) => !atual)}
+                    aria-label={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
+                    title={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
+                  >
+                    {mostrarSenha ? (
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M3 3l18 18" />
+                        <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8" />
+                        <path d="M9.9 5.2A10.8 10.8 0 0 1 12 5c5 0 8.5 4.5 9.5 7-.4 1-1.2 2.1-2.2 3.1" />
+                        <path d="M6.2 6.2C3.9 7.6 2.8 9.7 2.5 12c.6 1.5 3.8 7 9.5 7 1.2 0 2.3-.2 3.3-.7" />
+                      </svg>
+                    ) : (
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M2.5 12s3.5-7 9.5-7 9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7Z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+              </label>
+
+              {modoAutenticacao === 'cadastro' && (
+                <label className="login-field" htmlFor="confirmarSenha">
+                  Confirmar senha
+                  <div className="password-input-wrap">
+                    <input
+                      id="confirmarSenha"
+                      type={mostrarConfirmacao ? 'text' : 'password'}
+                      placeholder="Digite a senha novamente"
+                      value={confirmarSenha}
+                      onChange={(e) => setConfirmarSenha(e.target.value)}
+                      autoComplete="new-password"
+                      minLength={8}
+                      required
+                    />
+
+                    <button
+                      className="password-eye"
+                      type="button"
+                      onClick={() => setMostrarConfirmacao((atual) => !atual)}
+                      aria-label={mostrarConfirmacao ? 'Ocultar confirmação da senha' : 'Mostrar confirmação da senha'}
+                      title={mostrarConfirmacao ? 'Ocultar senha' : 'Mostrar senha'}
+                    >
+                      {mostrarConfirmacao ? (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M3 3l18 18" />
+                          <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8" />
+                          <path d="M9.9 5.2A10.8 10.8 0 0 1 12 5c5 0 8.5 4.5 9.5 7-.4 1-1.2 2.1-2.2 3.1" />
+                          <path d="M6.2 6.2C3.9 7.6 2.8 9.7 2.5 12c.6 1.5 3.8 7 9.5 7 1.2 0 2.3-.2 3.3-.7" />
+                        </svg>
+                      ) : (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M2.5 12s3.5-7 9.5-7 9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7Z" />
+                          <circle cx="12" cy="12" r="3" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                </label>
+              )}
+
+              {mensagemLogin && (
+                <p className="login-error" role="alert">
+                  {mensagemLogin}
+                </p>
+              )}
+
+              <button className="login-submit" type="submit">
+                {modoAutenticacao === 'login'
+                  ? 'ENTRAR NA MINHA CONTA →'
+                  : 'CRIAR MINHA CONTA →'}
+              </button>
+
+              <p className="login-switch">
+                {modoAutenticacao === 'login' ? (
+                  <>
+                    Ainda não possui conta?{' '}
+                    <button type="button" onClick={() => trocarModoAutenticacao('cadastro')}>
+                      Cadastre-se
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    Já possui cadastro?{' '}
+                    <button type="button" onClick={() => trocarModoAutenticacao('login')}>
+                      Fazer login
+                    </button>
+                  </>
+                )}
+              </p>
+
+              <p className="login-demo-note">
+                Cadastro demonstrativo: as contas ficam disponíveis somente enquanto
+                esta página estiver aberta. A autenticação real será conectada ao banco
+                de dados em uma próxima etapa.
+              </p>
+            </form>
+          </div>
+        </div>
+      )}
 
       {carrinhoAberto && (
         <div className="modal-overlay" onClick={fecharCarrinho}>
@@ -1020,7 +2703,7 @@ function App() {
 
                 <button
                   className="primary-button checkout-button"
-                  onClick={() => setCheckoutAberto(true)}
+                  onClick={abrirCheckout}
                 >
                   IR PARA O PAGAMENTO <span>→</span>
                 </button>
