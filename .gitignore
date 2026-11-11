@@ -1,0 +1,22 @@
+
+# Dependências
+node_modules/
+**/node_modules/
+
+# Arquivos de ambiente e senhas
+.env
+.env.*
+!.env.example
+
+# Builds
+dist/
+build/
+coverage/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Configurações locais
+.vscode/
+.DS_Store

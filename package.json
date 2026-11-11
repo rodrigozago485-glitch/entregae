@@ -1,0 +1,22 @@
+{
+  "name": "delivery-platform",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/web",
+    "apps/api",
+    "packages/shared"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev --workspace=@delivery/web",
+    "dev:api": "npm run dev --workspace=@delivery/api",
+    "build": "npm run build --workspaces --if-present"
+  },
+  "dependencies": {
+    "leaflet": "^1.9.4",
+    "react-leaflet": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/leaflet": "^1.9.22"
+  }
+}
